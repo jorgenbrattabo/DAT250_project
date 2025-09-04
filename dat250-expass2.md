@@ -1,0 +1,5 @@
+My number one problem with this task is that I have never coded with Java before. Therefore, I have spent quite some time looking at the published videos, talking with the other students, and searched online to get an understanding of how Java works and what the different functions, methods etc. does. While I have needed a lot of help I have also learned alot, so I hope it goes smoother for the next tasks.
+
+Some other problems I ran into was finding out how I could link users, polls, votes and vote options using IDs. For example in Poll.java I made a unique id for each poll and used UserId to look at who made the poll. I also made voteOptionIds to list the answer alternatives available in each poll. 
+
+One problem I had with Bruno was that I wanted the different options for "red" and "blue" to be available instead of just different ids for different alternatives. In FullScenarioTest, I managed to just add them directly in the code, but I could not do this in Bruno. I think I would have needed to make a VoteOptionController of some sort to make this work. I might look into this later, but I think it also works quite well like it is for the moment. 

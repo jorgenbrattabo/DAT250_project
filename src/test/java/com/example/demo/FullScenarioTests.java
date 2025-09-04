@@ -46,7 +46,7 @@ public class FullScenarioTests {
 
         // 5. User 1 creates a poll
         Poll poll = new Poll();
-        poll.setQuestion("Favorite color?");
+        poll.setQuestion("What is your Favorite color?");
         poll.setPublishedAt(java.time.Instant.parse("2025-09-03T12:00:00Z"));
         poll.setValidUntil(java.time.Instant.parse("2025-09-10T12:00:00Z"));
         poll.setUserId(user1Id);

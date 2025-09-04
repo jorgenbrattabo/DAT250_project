@@ -9,8 +9,6 @@ import com.example.demo.domain.User;
 
 import java.util.HashMap;
 
-// Legg til unique id!!!!
-
 @Component
 public class PollManager {
     private HashMap<Long, User> users= new HashMap<>();
