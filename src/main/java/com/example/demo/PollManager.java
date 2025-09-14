@@ -11,10 +11,10 @@ import java.util.HashMap;
 
 @Component
 public class PollManager {
-    private HashMap<Long, User> users= new HashMap<>();
-    private HashMap<Long, Poll> polls = new HashMap<>();
-    private HashMap<Long, Vote> votes = new HashMap<>();
-    private HashMap<Long, VoteOption> voteOptions = new HashMap<>();
+    private static HashMap<Long, User> users= new HashMap<>();
+    private static HashMap<Long, Poll> polls = new HashMap<>();
+    private static HashMap<Long, Vote> votes = new HashMap<>();
+    private static HashMap<Long, VoteOption> voteOptions = new HashMap<>();
 
     public PollManager() {}
 

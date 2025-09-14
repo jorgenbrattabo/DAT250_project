@@ -93,6 +93,7 @@ public class FullScenarioTests {
         // 10. List votes (should show the most recent vote for User 2)
         ResponseEntity<Vote[]> votesResponse = restTemplate.getForEntity("/votes", Vote[].class);
         assertThat(votesResponse.getStatusCode().value()).isEqualTo(200);
+        System.out.println("Votes before assertion: " + votesResponse.getBody());
         assertThat(votesResponse.getBody()).isNotEmpty();
 
         // 11. Delete the poll
