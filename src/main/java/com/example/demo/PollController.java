@@ -1,13 +1,7 @@
 package com.example.demo;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
 import com.example.demo.domain.Poll;
 import com.example.demo.domain.VoteOption;
@@ -19,12 +13,21 @@ public class PollController {
     @Autowired
     private PollManager pollManager;
 
+    public static class OptionResponse {
+        public Long id;
+        public String caption;
+        public OptionResponse(Long id, String caption) {
+            this.id = id;
+            this.caption = caption;
+        }
+    }
+
     public static class PollResponse {
         public Long id;
         public String question;
-        public java.util.List<String> options;
+        public java.util.List<OptionResponse> options;
 
-        public PollResponse(Long id, String question, java.util.List<String> options) {
+        public PollResponse(Long id, String question, java.util.List<OptionResponse> options) {
             this.id = id;
             this.question = question;
             this.options = options;
@@ -46,19 +49,23 @@ public class PollController {
         // Store each option
         for (int i = 0; i < options.size(); i++) {
             VoteOption option = new VoteOption();
-            option.setId((long) (pollManager.getVoteOptions().size() + 1));
+            option.setId(pollManager.getNextVoteOptionId());
             option.setCaption(options.get(i));
-            option.setPollId(newId);
+            option.setPoll(poll);
             option.setPresentationOrder(i);
             pollManager.getVoteOptions().put(option.getId(), option);
         }
 
-        // Build response with option captions
-        return new PollResponse(poll.getId(), poll.getQuestion(), options);
+        // Build the list of option responses with id and caption
+        java.util.List<OptionResponse> optionResponses = pollManager.getVoteOptions().values().stream()
+            .filter(opt -> opt.getPoll().getId().equals(poll.getId()))
+            .sorted(java.util.Comparator.comparingInt(VoteOption::getPresentationOrder))
+            .map(opt -> new OptionResponse(opt.getId(), opt.getCaption()))
+            .toList();
+
+        return new PollResponse(poll.getId(), poll.getQuestion(), optionResponses);
     }
 
-
-    
     @GetMapping("/polls")
     public Collection<Poll> listPolls() {
         return pollManager.getPolls().values();
@@ -68,10 +75,16 @@ public class PollController {
     public void deletePoll(@PathVariable Long pollId) {
         pollManager.getPolls().remove(pollId);
 
-        pollManager.getVotes().entrySet().removeIf(entry -> 
-            pollId.equals(entry.getValue().getPollId()) || entry.getValue().getPollId() == null
+        // Remove all votes for this poll
+        pollManager.getVotes().entrySet().removeIf(entry ->
+            entry.getValue().getPoll() != null &&
+            pollId.equals(entry.getValue().getPoll().getId())
         );
 
-        pollManager.getVoteOptions().values().removeIf(option -> pollId.equals(option.getPollId()));
+        // Remove all vote options for this poll
+        pollManager.getVoteOptions().entrySet().removeIf(entry ->
+            entry.getValue().getPoll() != null &&
+            pollId.equals(entry.getValue().getPoll().getId())
+        );
     }
 }

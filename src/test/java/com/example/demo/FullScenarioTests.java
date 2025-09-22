@@ -49,25 +49,25 @@ public class FullScenarioTests {
         poll.setQuestion("What is your Favorite color?");
         poll.setPublishedAt(java.time.Instant.parse("2025-09-03T12:00:00Z"));
         poll.setValidUntil(java.time.Instant.parse("2025-09-10T12:00:00Z"));
-        poll.setUserId(user1Id);
+        poll.setCreatedBy(user1);
         ResponseEntity<Poll> pollResponse = restTemplate.postForEntity("/polls", poll, Poll.class);
-        Long pollId = pollResponse.getBody().getId();
+        Poll createdPoll = pollResponse.getBody(); // Use this for all further references
 
 
         // 6. Create vote options for the poll
         VoteOption option1 = new VoteOption();
         option1.setCaption("Red");
         option1.setPresentationOrder(1);
-        option1.setPollId(pollId);
+        option1.setPoll(createdPoll); // Use the poll returned from backend
         ResponseEntity<VoteOption> option1Response = restTemplate.postForEntity("/voteoptions", option1, VoteOption.class);
-        Long option1Id = option1Response.getBody().getId();
+        VoteOption createdOption1 = option1Response.getBody();
 
         VoteOption option2 = new VoteOption();
         option2.setCaption("Blue");
         option2.setPresentationOrder(2);
-        option2.setPollId(pollId);
+        option2.setPoll(createdPoll);
         ResponseEntity<VoteOption> option2Response = restTemplate.postForEntity("/voteoptions", option2, VoteOption.class);
-        Long option2Id = option2Response.getBody().getId();
+        VoteOption createdOption2 = option2Response.getBody();
 
         // 7. List polls (should show the new poll)
         ResponseEntity<Poll[]> pollsResponse = restTemplate.getForEntity("/polls", Poll[].class);
@@ -76,17 +76,17 @@ public class FullScenarioTests {
 
         // 8. User 2 votes on the poll
         Vote vote1 = new Vote();
-        vote1.setUserId(user2Id);
-        vote1.setPollId(pollId);
-        vote1.setVoteOptionId(option1Id);
+        vote1.setVoter(user2Response.getBody()); // Use the returned user
+        vote1.setPoll(createdPoll);
+        vote1.setVotesOn(createdOption1);
         vote1.setPublishedAt(java.time.Instant.parse("2025-09-03T12:05:00Z"));
         restTemplate.postForEntity("/votes", vote1, Vote.class);
 
         // 9. User 2 changes his vote
         Vote vote2 = new Vote();
-        vote2.setUserId(user2Id);
-        vote2.setPollId(pollId);
-        vote2.setVoteOptionId(option2Id);
+        vote2.setVoter(user2Response.getBody());
+        vote2.setPoll(createdPoll);
+        vote2.setVotesOn(createdOption2);
         vote2.setPublishedAt(java.time.Instant.parse("2025-09-03T12:10:00Z"));
         restTemplate.postForEntity("/votes", vote2, Vote.class);
 
@@ -97,7 +97,7 @@ public class FullScenarioTests {
         assertThat(votesResponse.getBody()).isNotEmpty();
 
         // 11. Delete the poll
-        restTemplate.delete("/polls/" + pollId);
+        restTemplate.delete("/polls/" + createdPoll.getId());
 
         // 12. List votes (should be empty)
         ResponseEntity<Vote[]> votesAfterDeleteResponse = restTemplate.getForEntity("/votes", Vote[].class);
