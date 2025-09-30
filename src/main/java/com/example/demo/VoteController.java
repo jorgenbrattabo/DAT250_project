@@ -12,6 +12,8 @@ public class VoteController {
 
     @Autowired
     private PollManager pollManager;
+    @Autowired
+    private redis.clients.jedis.UnifiedJedis jedis;
 
     // ---------------------------
     // Create a vote
@@ -33,6 +35,11 @@ public class VoteController {
         long newId = pollManager.getVotes().size() + 1;
         vote.setId(newId);
         pollManager.getVotes().put(newId, vote);
+
+        // Invalidate cache for this poll 
+        String cacheKey = "poll:votes:" + vote.getPoll().getId();
+        jedis.del(cacheKey);
+
         return vote;
     }
 
@@ -56,6 +63,45 @@ public class VoteController {
         return latestVotes.values();
     }
 
+    @GetMapping("/polls/{pollId}/votes")
+    public List<Integer> getVotesForPoll(@PathVariable Long pollId) {
+
+        System.out.println("Vote options: " + pollManager.getVoteOptions());
+        System.out.println("Votes: " + pollManager.getVotes());
+        String cacheKey = "poll:votes:" + pollId;
+
+        //Tries to retrieve from cache
+        List<String> cached = jedis.lrange(cacheKey, 0, -1);
+        if (cached != null && !cached.isEmpty()) {
+            //converts cached strings to integers
+            List<Integer> voteCounts = cached.stream().map(Integer::parseInt).toList();
+            return voteCounts;
+        }   
+        // if it is not cached, aggregate from database as before
+        List<Long> optionIds = pollManager.getVoteOptions().values().stream()
+                        .filter(opt -> opt.getPoll() != null && pollId.equals(opt.getPoll().getId()))
+                        .sorted(Comparator.comparingInt(opt -> opt.getPresentationOrder()))
+                        .map(opt -> opt.getId())
+                        .toList();
+
+
+        List<Integer> voteCounts = optionIds.stream()
+                        .map(id -> (int) pollManager.getVotes().values().stream()
+                                .filter(v -> v.getVotesOn() != null && id.equals(v.getVotesOn().getId()))
+                                .count())
+                        .toList();
+        // Stores in cache as a Redis list
+        List<String> asStrings = voteCounts.stream().map(String::valueOf).toList();
+        jedis.del(cacheKey); //removes old cache if there is any
+        if (!asStrings.isEmpty()) {
+            jedis.rpush(cacheKey, asStrings.toArray(new String[0]));
+            jedis.expire(cacheKey, 300); // 5 Minutes time-to-live
+        }
+        return voteCounts;
+    }
+
+
+    /* Old way
     // ---------------------------
     // New endpoint: return vote counts per option for a poll
     // ---------------------------
@@ -76,5 +122,5 @@ public class VoteController {
                 .collect(Collectors.toList());
 
         return voteCounts;
-    }
+    } */
 }

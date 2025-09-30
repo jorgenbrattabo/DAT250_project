@@ -34,6 +34,7 @@ public class PollController {
         }
     }
 
+    //Posting polls
     @PostMapping("/polls")
     public PollResponse createPoll(@RequestBody java.util.Map<String, Object> payload) {
         String question = (String) payload.get("question");
@@ -66,11 +67,13 @@ public class PollController {
         return new PollResponse(poll.getId(), poll.getQuestion(), optionResponses);
     }
 
+    // Getting the polls
     @GetMapping("/polls")
     public Collection<Poll> listPolls() {
         return pollManager.getPolls().values();
     }
 
+    // Deleting polls
     @DeleteMapping("/polls/{pollId}")
     public void deletePoll(@PathVariable Long pollId) {
         pollManager.getPolls().remove(pollId);
