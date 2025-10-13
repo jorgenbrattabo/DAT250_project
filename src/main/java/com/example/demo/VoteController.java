@@ -14,10 +14,10 @@ public class VoteController {
     private PollManager pollManager;
     @Autowired
     private redis.clients.jedis.UnifiedJedis jedis;
+    @Autowired
+    private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
 
-    // ---------------------------
     // Create a vote
-    // ---------------------------
     @PostMapping("/votes")
     public Vote createVote(@RequestBody Vote vote) {
         if (vote.getPoll() == null || vote.getVotesOn() == null || vote.getVoter() == null) {
@@ -40,12 +40,18 @@ public class VoteController {
         String cacheKey = "poll:votes:" + vote.getPoll().getId();
         jedis.del(cacheKey);
 
+        // Publish vote event to RabbitMQ
+        String topicName = "poll-" + vote.getPoll().getId();
+        String routingKey = "vote";
+        String message = "{ \"pollId\": " + vote.getPoll().getId() +
+                         ", \"optionId\": " + vote.getVotesOn().getId() +
+                         ", \"voterId\": " + vote.getVoter().getId() + " }";
+        rabbitTemplate.convertAndSend(topicName, routingKey, message);
         return vote;
     }
 
-    // ---------------------------
+
     // List all raw votes (existing)
-    // ---------------------------
     @GetMapping("/votes")
     public Collection<Vote> listVotes() {
         // Only return the most recent vote per user and poll

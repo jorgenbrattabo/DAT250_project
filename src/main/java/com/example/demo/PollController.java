@@ -11,6 +11,12 @@ import com.example.demo.domain.VoteOption;
 public class PollController {
 
     @Autowired
+    private org.springframework.amqp.rabbit.core.RabbitTemplate rabbitTemplate;
+
+    @Autowired
+    private org.springframework.amqp.core.AmqpAdmin amqpAdmin;
+
+    @Autowired
     private PollManager pollManager;
 
     public static class OptionResponse {
@@ -56,7 +62,11 @@ public class PollController {
             option.setPresentationOrder(i);
             pollManager.getVoteOptions().put(option.getId(), option);
         }
-
+        // Register a topic exchange
+        String topicName = "poll-" + newId;
+        org.springframework.amqp.core.TopicExchange exchange = new org.springframework.amqp.core.TopicExchange(topicName);
+        amqpAdmin.declareExchange(exchange);
+        
         // Build the list of option responses with id and caption
         java.util.List<OptionResponse> optionResponses = pollManager.getVoteOptions().values().stream()
             .filter(opt -> opt.getPoll().getId().equals(poll.getId()))
@@ -78,16 +88,18 @@ public class PollController {
     public void deletePoll(@PathVariable Long pollId) {
         pollManager.getPolls().remove(pollId);
 
-        // Remove all votes for this poll
-        pollManager.getVotes().entrySet().removeIf(entry ->
-            entry.getValue().getPoll() != null &&
-            pollId.equals(entry.getValue().getPoll().getId())
-        );
-
         // Remove all vote options for this poll
         pollManager.getVoteOptions().entrySet().removeIf(entry ->
-            entry.getValue().getPoll() != null &&
-            pollId.equals(entry.getValue().getPoll().getId())
+            entry.getValue().getPoll() != null && pollId.equals(entry.getValue().getPoll().getId())
         );
+
+        // Remove all votes for this poll OR votes referencing missing options
+        pollManager.getVotes().entrySet().removeIf(entry ->
+            (entry.getValue().getPoll() != null && pollId.equals(entry.getValue().getPoll().getId())) ||
+            (entry.getValue().getVotesOn() == null || !pollManager.getVoteOptions().containsKey(entry.getValue().getVotesOn().getId()))
+        );
+
+        System.out.println("Votes after deletion:");
+        pollManager.getVotes().values().forEach(System.out::println);
     }
 }

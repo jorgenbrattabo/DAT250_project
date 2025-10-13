@@ -1,4 +1,4 @@
-From Last week, managed to use log into H2 console and see the database, with help from another student in the class. Seems that the URL in application.properties and Pollstest.java did not match up. So after fixing that the page finally works. 
+From Last week, managed to log into H2 console and see the database, with help from another student in the class. Seems that the URL in application.properties and Pollstest.java did not match up. So after fixing that the page finally works. 
 
 For this task, everything has mostly gone pretty well. I used Redis with docker and it was nice to get some easy example at first so I could understand how Redis worked. Then when I implemented it, I mostly did everything in VoteController, except for invalidating the cache after a vote, which I did in Createvote. I struggled a bit with understanding what i should keep and what I should not in VoteController, but it works now so I think it is okay. To be safe, I have commented out the old code in Votecontroller, so that I can remove it once I am sure that I don't need it anymore. 
 
