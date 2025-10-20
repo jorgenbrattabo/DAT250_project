@@ -1,8 +1,12 @@
-package com.example.demo;
+package com.example.demo.controllers;
+
+
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.Collection;
+
+import com.example.demo.PollManager;
 import com.example.demo.domain.Poll;
 import com.example.demo.domain.VoteOption;
 
@@ -88,16 +92,16 @@ public class PollController {
     public void deletePoll(@PathVariable Long pollId) {
         pollManager.getPolls().remove(pollId);
 
-        // Remove all vote options for this poll
-        pollManager.getVoteOptions().entrySet().removeIf(entry ->
-            entry.getValue().getPoll() != null && pollId.equals(entry.getValue().getPoll().getId())
-        );
-
         // Remove all votes for this poll OR votes referencing missing options
         pollManager.getVotes().entrySet().removeIf(entry ->
             (entry.getValue().getPoll() != null && pollId.equals(entry.getValue().getPoll().getId())) ||
             (entry.getValue().getVotesOn() == null || !pollManager.getVoteOptions().containsKey(entry.getValue().getVotesOn().getId()))
         );
+
+        // Remove all vote options for this poll
+        pollManager.getVoteOptions().entrySet().removeIf(entry ->
+            entry.getValue().getPoll() != null && pollId.equals(entry.getValue().getPoll().getId())
+        );        
 
         System.out.println("Votes after deletion:");
         pollManager.getVotes().values().forEach(System.out::println);
